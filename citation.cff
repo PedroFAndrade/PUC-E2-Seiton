@@ -1,0 +1,30 @@
+cff-version: 1.0.1
+message: Please cite this software using these metadata.
+title: Seiton
+authors: Wesley Correa Gomes.
+  - family-names: Correa Gomes
+    given-names: Wesley
+  - family-names: Henrique Arantes Dias
+    given-names: Bruno
+  - family-names: Teixeira Dias
+    given-names: Marcos
+  - family-names: Ferreira Andrade
+    given-names: Pedro 
+  - family-names: Gonçalves da Cunha
+    given-names: Renan 
+  - family-names: da Silva Candido
+    given-names: Gustavo 
+  - name-suffix: Professora
+    affiliation: PUC Minas
+    family-names: de Nardin
+    given-names: Luciana 
+keywords:
+  - Desempenho
+  - Melhoria Contínua
+  - Organização
+  - Produtividade
+  - Agilidade
+repository-code: https://github.com/ICEI-PUC-Minas-PMV-ADS/pmv-ads-2023-2-e2-proj-int-t5-seiton
+license: CC-BY-4.0
+version: 1.0.0
+date-released: 2023-12-06

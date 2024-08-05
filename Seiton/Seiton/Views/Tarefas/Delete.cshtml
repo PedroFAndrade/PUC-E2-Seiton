@@ -1,0 +1,17 @@
+﻿@model Seiton.Models.Tarefas
+
+<div>
+    <div class="modal">
+        <div class="modal-content">
+            <h1>Apagar Tarefa</h1>
+            <hr />
+            <p>Deseja realmente apagar esta tarefa?</p>
+            <p class="aviso">(Atenção! Todos os dados presentes nesta tarefa serão perdidos!)</p>
+            <form asp-action="Delete">
+                <input type="hidden" asp-for="Id" />
+                <a class="backPage">Voltar</a> |
+                <input class="btn" type="submit" value="Apagar" />
+            </form>
+        </div>
+    </div>
+</div>

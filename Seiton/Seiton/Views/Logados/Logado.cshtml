@@ -1,0 +1,284 @@
+﻿@{
+    ViewData["Title"] = "Logado";
+}
+
+@model ViewModel
+<link rel="stylesheet" type="text/css" href="/css/Logado.css" media="screen" />
+
+<div class="Container">
+    
+    <div class="side-bar-background">
+        <div class="white-blue">
+            <h1>Projetos</h1>
+            <ul>
+                @foreach (var projeto in Model.Nome_projeto.Zip(Model.ProjetoId, (nomeProjeto, ProjetoId) => new { NomeProjeto = nomeProjeto, ProjetoId = ProjetoId }))
+                {
+                    <li>
+                        <a class="project-name" asp-area="" asp-route-id="@projeto.ProjetoId">@projeto.NomeProjeto</a>
+                    </li>
+                }
+                
+            </ul>
+            <div class="adicionar">
+                <span class="material-symbols-outlined">add</span>
+                <button class="nav-link text-dark" asp-area="" onclick="ModalOpen(0, '/Projetos/Create/')">Novo</button>
+            </div>
+            <hr />
+        </div>
+    </div>
+
+    <div class="Container_Body">
+            @if (User.Identity.IsAuthenticated)
+            {
+                <h1 class="project-name-dropdown">@ViewData["userName"]</h1>
+
+                <div class="dropdown" onclick="joaquim()">
+                    <img class="dropdown-image" src="/img/man.png" alt="Imagem de Menu">
+                    <div class="dropdown-content">
+                    <button class="nav-link text-dark" asp-area="" onclick="ModalOpen(@ViewData["userId"], '/Usuarios/Edit/')">
+                        <span class="material-symbols-outlined">
+                            edit
+                        </span>Editar
+                    </button>
+                    <button class="nav-link text-dark" asp-area="" onclick="ModalOpen(@ViewData["userId"], '/Usuarios/Delete/')">
+                        <span class="material-symbols-outlined">
+                            delete
+                        </span>Apagar
+                    </button>
+                    <a class="nav-link text-dark" asp-area="" asp-controller="Usuarios" asp-action="Logout">
+                        <span class="material-symbols-outlined">
+                            logout
+                        </span>Sair
+                    </a>
+                    </div>
+                </div>
+            }
+
+        <div class="info_container">
+            <h1>Projeto:</h1>
+            <h4>@ViewData["NomeProjeto"]</h4>
+            @if (@ViewData["ProjetoId"] != null)
+            {
+                <details>
+                    <summary></summary>
+                    <button class="nav-link text-dark" asp-area="" onclick="ModalOpen(@ViewData["ProjetoId"], '/Projetos/Edit/' )"><img src="/img/edit.png" class="foto-button" />Editar</button>
+                    <button class="nav-link text-dark" asp-area="" onclick="ModalOpen(@ViewData["ProjetoId"], '/Projetos/Delete/')"><img src="/img/delete.png" class="foto-button" />Apagar</button>
+                    <button class="nav-link text-dark" onclick="abrirRelatorioModal()"><img src="/img/report.png" class="foto-button" />Relatório</button>
+                </details>
+            }
+
+        </div>
+
+        <div class="colum_container">
+            
+            @if (Model.NomeColuna != null)
+            {
+                var c = 0;
+                var colunas = Model.NomeColuna.Zip(Model.IdColuna, (nomecoluna, idcoluna) => new { NomeColuna = nomecoluna, IdColuna = idcoluna })
+                .Zip(Model.CorColuna, (coluna, cor) => new { NomeColuna = coluna.NomeColuna, IdColuna = coluna.IdColuna, CorColuna = cor });
+
+                var somaTotalTarefas = 0;
+
+                @foreach (var Coluna in colunas)
+                {
+
+                    var tarefasCombinadas = Model.IdTarefa
+                    .Zip(
+                    Model.NomeTarefas.Zip(Model.descricao, (nomeTarefa, desc) => new { NomeTarefa = nomeTarefa, Descricao = desc }),
+                    (idTarefa, tarefa) => new { IdTarefa = idTarefa, Tarefa = tarefa }
+                    )
+                    .Zip(
+                    Model.Responsavel.Zip(Model.Prioridade, (resp, prioridade) => new { Responsavel = resp, Prioridade = prioridade }),
+                    (tarefa, respPrioridade) => new
+                    {
+                        IdTarefa = tarefa.IdTarefa,
+                        NomeTarefa = tarefa.Tarefa.NomeTarefa,
+                        Descricao = tarefa.Tarefa.Descricao,
+                        Responsavel = respPrioridade.Responsavel,
+                        Prioridade = respPrioridade.Prioridade
+                    }
+                    )
+                    .Zip(
+                    Model.ID,
+                    (tarefa, ID) => new
+                    {
+                        IdTarefa = tarefa.IdTarefa,
+                        NomeTarefa = tarefa.NomeTarefa,
+                        Descricao = tarefa.Descricao,
+                        Responsavel = tarefa.Responsavel,
+                        Prioridade = tarefa.Prioridade,
+                        id = ID
+                    }
+                    )
+                    .Where(tarefa => tarefa.IdTarefa == Coluna.IdColuna);
+
+                    // Obtendo a quantidade de tarefas
+
+                    var quant = Model.IdTarefa
+
+                    .Zip(Model.IdTarefa.Zip(Model.IdColunaFK, (id, fkid) => new { IdTarefa = id, IdColunaFK = fkid }),
+                    (idTarefa, fk) => new 
+                    {
+                        IdTarefa = idTarefa,
+                        ColunasId = fk.IdColunaFK
+                    });
+
+                    int QuantTarefas = quant.Count(t => t.ColunasId == Coluna.IdColuna);
+                    ViewData["QuantTarefas"] = QuantTarefas;
+
+                    // Obtendo a quantidade de tarefas da ultima coluna
+
+                    var ultimaColuna = colunas.LastOrDefault();
+                    int quantTarefasUltimaColuna = ultimaColuna != null && ViewData["QuantTarefas"] != null ? Convert.ToInt32(ViewData["QuantTarefas"]) : 0;
+
+                    // Adicione a quantidade de tarefas ao total
+                    somaTotalTarefas += QuantTarefas;
+                    ViewData["somaTotal"] = somaTotalTarefas;
+
+                    // Porcentagem de progresso
+                    if  (somaTotalTarefas != 0) 
+                    {
+                        var porcentagem = (quantTarefasUltimaColuna * 100) / somaTotalTarefas;
+                        ViewData["porcentagem"] = porcentagem;
+                    }
+                    else
+                    {
+                        var porcentagem = 0;
+                        ViewData["porcentagem"] = porcentagem;
+                    }
+
+
+                    <div class="columContainerInt">
+                    
+                        <div class="coluna">
+                            <div class="color_colum" style="background-color: @Coluna.CorColuna;"><div class="icolor_colum"></div></div>
+                            <h3>@Coluna.NomeColuna</h3>
+                            <button type="button" id="openModalBtn" onclick="ModalOpen(@Coluna.IdColuna, '/Colunas/Edit/')">
+                                <span class="material-symbols-outlined">
+                                    edit
+                                </span>
+                            </button>
+                        </div>
+                        <h4 class="NTarefas">Nº de Tarefas: @ViewData["QuantTarefas"]</h4>
+                        <hr />
+
+                            @if (c == 0)
+                            {
+                                <div id="adicionarTarefa" >
+                                <button class="nav-link text-dark" asp-area="" onclick="ModalOpen(@ViewData["IdProjetoAtual"], '/Tarefas/Create/')">
+                                    <span class="material-symbols-outlined">
+                                        add
+                                    </span>Nova tarefa
+                                </button>
+                                </div>
+                            }
+
+                        @foreach (var tarefa in tarefasCombinadas)
+                        {
+                            if (tarefa.Prioridade == 1)
+                            {
+                                <div class="tarefa prioridade-baixa" id="tarefaId">
+                                    <div class="Responsavel">
+                                        <h4>@tarefa.Responsavel</h4>
+                                    </div>
+                                    <div class="paragrafo2">
+                                        <h2>@tarefa.NomeTarefa</h2>
+                                    </div>
+                                    <hr>
+                                    <div class="paragrafo"><p>@tarefa.Descricao</p></div>
+                                    <div class="tarefaOp">
+                                        <button onclick="ModalOpen(@tarefa.id, '/Tarefas/Delete/')">
+                                            <span class="material-symbols-outlined">
+                                                delete
+                                            </span>
+                                        </button>
+                                        <button onclick="ModalOpen(@tarefa.id, '/Tarefas/Edit/')">
+                                            <span class="material-symbols-outlined">
+                                                edit
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                            else if (tarefa.Prioridade == 2)
+                            {
+                                <div class="tarefa prioridade-media" id="tarefaId">
+                                    <div class="Responsavel">
+                                        <h4>@tarefa.Responsavel</h4>
+                                    </div>
+                                    <div class="paragrafo2">
+                                        <h2>@tarefa.NomeTarefa</h2>
+                                    </div>
+                                    <hr>
+                                    <div class="paragrafo"><p>@tarefa.Descricao</p></div>
+                                    <div class="tarefaOp">
+                                        <button onclick="ModalOpen(@tarefa.id, '/Tarefas/Delete/')">
+                                            <span class="material-symbols-outlined">
+                                                delete
+                                            </span>
+                                        </button>
+                                        <button onclick="ModalOpen(@tarefa.id, '/Tarefas/Edit/')">
+                                            <span class="material-symbols-outlined">
+                                                edit
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                            else if (tarefa.Prioridade == 3)
+                            {
+                                <div class="tarefa prioridade-alta" id="tarefaId">
+                                    <div class="Responsavel">
+                                        <h4>@tarefa.Responsavel</h4>
+                                    </div>
+                                    <div class="paragrafo2">
+                                        <h2>@tarefa.NomeTarefa</h2>
+                                    </div>
+                                    <hr>
+                                    <div class="paragrafo"><p>@tarefa.Descricao</p></div>
+                                    <div class="tarefaOp">
+                                        <button onclick="ModalOpen(@tarefa.id, '/Tarefas/Delete/')">
+                                            <span class="material-symbols-outlined">
+                                                delete
+                                            </span>
+                                        </button>
+                                        <button onclick="ModalOpen(@tarefa.id, '/Tarefas/Edit/')">
+                                            <span class="material-symbols-outlined">
+                                                edit
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                            
+                        }
+                    </div>
+
+                    c = 1;
+                }
+                <!-- Modal Relatório -->
+                <div class="modal2 hidden" id="relatorioModal">
+                    <div class="modal-content2">
+                        <h1>Relatório</h1>
+                        <hr />
+                        <p>Total de Tarefas:@ViewData["somaTotal"]</p>
+                        <p>Porcentagem de Progresso: @ViewData["porcentagem"] %</p>
+                        <div class="progress">
+                            <div id="progressBar" class="progress-bar" style="width: @ViewData["porcentagem"]%"></div>
+                        </div>
+                        <a class="backPage" onclick="fecharRelatorioModal()">Voltar</a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="myModalE" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeModalBtn">&times;</span>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+</div>
